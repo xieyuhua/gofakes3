@@ -3,9 +3,10 @@ package gofakes3
 import (
 	"encoding/base64"
 	"encoding/hex"
-	"encoding/xml"
+	xml "github.com/xieyuhua/gofakes3/xml"
     "github.com/xieyuhua/gofakes3/signature"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
 	"math"
@@ -100,7 +101,7 @@ func (g *GoFakeS3) Server() http.Handler {
 		handler = g.hostBucketMiddleware(handler)
 	}
 
-	return handler
+	return g.authMiddleware(handler)
 }
 
 func (g *GoFakeS3) AddAuthKeys(p map[string]string) {
@@ -109,6 +110,8 @@ func (g *GoFakeS3) AddAuthKeys(p map[string]string) {
 	for k, v := range p {
 		g.v4AuthPair[k] = v
 	}
+	
+	
 	signature.StoreKeys(g.v4AuthPair)
 }
 
@@ -122,6 +125,7 @@ func (g *GoFakeS3) DelAuthKeys(p []string) {
 }
 
 func (g *GoFakeS3) authMiddleware(handler http.Handler) http.Handler {
+    
 	return http.HandlerFunc(func(w http.ResponseWriter, rq *http.Request) {
 		g.mu.RLock()
 		defer g.mu.RUnlock()
@@ -162,7 +166,6 @@ func (g *GoFakeS3) timeSkewMiddleware(handler http.Handler) http.Handler {
 				return
 			}
 		}
-
 		handler.ServeHTTP(w, rq)
 	})
 }
